@@ -23,6 +23,7 @@ import { AmountField } from '../../../components/AmountField';
 import { formatDate, formatDateTime, formatMoney } from '../../../lib/format';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
 import { printDocumentHtml } from '../../../lib/documentPrint';
+import { printPaymentReceipt } from '../../../lib/receiptPrint';
 import TillMomoPrompt from '../../../components/TillMomoPrompt';
 
 type Room = {
@@ -1802,6 +1803,7 @@ export default function HotelPage() {
     }
     setBusy(true);
     setError('');
+    const alreadyPaid = new Set((folio.payments || []).map((p) => p.id));
     try {
       const f = await api(`/hotel/folios/${folio.id}/payments`, {
         method: 'POST',
@@ -1812,6 +1814,9 @@ export default function HotelPage() {
           notes: payForm.notes.trim() || null,
         }),
       });
+      const taken = ((f.data?.payments || []) as Array<{ id: string }>).find((p) => !alreadyPaid.has(p.id));
+      // A bill moved to account moves no money, so there is nothing to receipt.
+      if (taken && payForm.method !== 'credit') printPaymentReceipt('hotel_payment', taken.id);
       setFolio(f.data || null);
       setPayForm((p) => ({ ...p, method: 'cash', reference: '', notes: '' }));
       setMessage('Payment recorded');

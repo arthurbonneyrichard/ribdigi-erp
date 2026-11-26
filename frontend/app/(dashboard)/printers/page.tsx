@@ -5,6 +5,7 @@ import FormModal from '../../../components/FormModal';
 import PageHeader from '../../../components/PageHeader';
 import { api } from '../../../lib/api';
 import RestaurantTicketDelivery from '../../../components/RestaurantTicketDelivery';
+import TillPrinterSettings from '../../../components/TillPrinterSettings';
 import { openReceiptPrintWindow } from '../../../lib/posReceiptPrint';
 import { industryLabel, normalizeIndustry } from '../../../lib/industries';
 import { getMe } from '../../../lib/meCache';
@@ -66,6 +67,9 @@ export default function PrinterSettingsPage() {
     host: '',
     port: 9100,
     agent_id: '',
+    // How a till agent reaches the printer.
+    link: 'windows' as 'windows' | 'network' | 'serial' | 'agent',
+    device: '',
   });
 
   const load = useCallback(async () => {
@@ -237,12 +241,29 @@ export default function PrinterSettingsPage() {
         body.host = host;
         body.port = Number(form.port) || 9100;
       }
-      if (form.connection_type === 'print_agent') body.agent_id = agentId;
+      if (form.connection_type === 'print_agent') {
+        body.agent_id = agentId;
+        const device = form.device.trim();
+        if (form.link === 'network') {
+          if (!host) {
+            setError('Enter the printer’s IP address.');
+            return;
+          }
+          body.host = host;
+          body.port = Number(form.port) || 9100;
+        } else if (form.link !== 'agent') {
+          if (!device) {
+            setError(form.link === 'windows' ? 'Enter the printer name shown in Windows.' : 'Enter the COM port, for example COM5.');
+            return;
+          }
+          body.device = `${form.link}:${device}`;
+        }
+      }
       await api('/printers', {
         method: 'POST',
         body: JSON.stringify(body),
       });
-      setForm((f) => ({ ...f, name: '', host: '', agent_id: '' }));
+      setForm((f) => ({ ...f, name: '', host: '', agent_id: '', device: '' }));
       setPrinterAddOpen(false);
       setNotice('Printer saved.');
       await load();
@@ -309,6 +330,23 @@ export default function PrinterSettingsPage() {
       }
       if (job.status === 'printed') {
         setNotice('The server sent the test to the printer. This does not confirm that paper came out.');
+        await load();
+        return;
+      }
+      // A till agent job: wait a few seconds for what the printer really answered.
+      let latest = job;
+      for (let i = 0; i < 12 && job.id && ['queued', 'claimed', 'printing'].includes(latest.status); i += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        latest = (await api(`/printers/jobs/${job.id}`).catch(() => ({ data: latest }))).data || latest;
+      }
+      if (latest.status === 'printed') {
+        setNotice('The printer accepted the test page. Check that paper came out.');
+        await load();
+        return;
+      }
+      if (latest.status === 'failed') {
+        setNotice('');
+        setError(`Test print failed: ${latest.last_error || 'the printer did not accept it'}`);
         await load();
         return;
       }
@@ -489,6 +527,7 @@ export default function PrinterSettingsPage() {
           </span>
         </label>
       </div>
+      <TillPrinterSettings printers={rows} />
       {restaurantPrint ? (
         <div className="card">
           <section className="rdesk" aria-label="Kitchen and bar orders setting">
@@ -614,7 +653,33 @@ export default function PrinterSettingsPage() {
               )}
             </label>
           ) : null}
-          {form.connection_type === 'network' ? (
+          {form.connection_type === 'print_agent' ? (
+            <label>
+              How the till reaches the printer
+              <select
+                value={form.link}
+                aria-label="How the till reaches the printer"
+                onChange={(e) => setForm({ ...form, link: e.target.value as typeof form.link })}
+              >
+                <option value="windows">USB or Bluetooth printer installed in Windows</option>
+                <option value="network">Network printer (IP address)</option>
+                <option value="serial">Serial or Bluetooth COM port</option>
+                <option value="agent">Use the printer set on the till itself</option>
+              </select>
+            </label>
+          ) : null}
+          {form.connection_type === 'print_agent' && (form.link === 'windows' || form.link === 'serial') ? (
+            <label>
+              {form.link === 'windows' ? 'Printer name in Windows' : 'COM port'}
+              <input
+                value={form.device}
+                aria-label="Till printer device"
+                placeholder={form.link === 'windows' ? 'Xprinter XP-80' : 'COM5'}
+                onChange={(e) => setForm({ ...form, device: e.target.value })}
+              />
+            </label>
+          ) : null}
+          {form.connection_type === 'network' || (form.connection_type === 'print_agent' && form.link === 'network') ? (
             <>
               <label>
                 Host (private IP or .local)

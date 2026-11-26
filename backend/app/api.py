@@ -11541,6 +11541,7 @@ async def _pos_sale_impl_body(payload: PosSaleCreate, claims: dict, db: AsyncSes
         "request_fingerprint": request_fingerprint,
         "cashier_user_id": claims.get("sub"),
         "cashier_name": cashier_row.full_name if cashier_row is not None else None,
+        "cash_tendered": None if payload.cash_tendered is None else money_json(payload.cash_tendered),
         "pos_operator_session_id": claims.get("pos_operator_session_id"),
         # Set when this cashier took over a sale another cashier had started.
         "started_by_user_id": started_by_id,
@@ -11793,26 +11794,6 @@ async def _pos_sale_impl_body(payload: PosSaleCreate, claims: dict, db: AsyncSes
                 "source": "pos",
             },
         )
-    print_jobs_out: list[dict] = []
-    try:
-        from app import printers as printers_svc
-
-        tenant_row = await tenants_svc.get_tenant(db, claims["tenant_id"])
-        store_row = None
-        if session.store_id:
-            store_row = await db.get(m.Store, session.store_id)
-        print_rows = await printers_svc.enqueue_pos_sale_prints(
-            db,
-            tenant_id=claims["tenant_id"],
-            tx=tx,
-            user_id=claims.get("sub"),
-            store_id=session.store_id,
-            tenant=tenant_row,
-            store=store_row,
-        )
-        print_jobs_out = [printers_svc.serialize_job(j) for j in print_rows]
-    except Exception:
-        logger.exception("POS print enqueue failed sale_id=%s", tx.id)
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
@@ -11926,11 +11907,36 @@ async def _pos_sale_impl_body(payload: PosSaleCreate, claims: dict, db: AsyncSes
         payload_out["offline_allocation_remaining"] = allocation_remaining
     if drawer is not None:
         payload_out["drawer"] = drawer
+    # Printing starts only now that the sale is saved: a failed sale never prints, and a
+    # printer problem never undoes a sale. An offline sale already printed at the till.
+    print_jobs_out: list[dict] = []
+    if not offline_sync:
+        sale_id = tx.id
+        try:
+            from app import printers as printers_svc
+
+            tenant_row = await tenants_svc.get_tenant(db, claims["tenant_id"])
+            store_row = await db.get(m.Store, session.store_id) if session.store_id else None
+            print_rows = await printers_svc.enqueue_pos_sale_prints(
+                db,
+                tenant_id=claims["tenant_id"],
+                tx=tx,
+                user_id=claims.get("sub"),
+                store_id=session.store_id,
+                tenant=tenant_row,
+                store=store_row,
+                terminal_id=payload.device_id or claims.get("pos_device_id"),
+            )
+            rows_out = [printers_svc.serialize_job(j) for j in print_rows]
+            await db.commit()
+            print_jobs_out = rows_out
+        except Exception:
+            logger.exception("POS print enqueue failed sale_id=%s", sale_id)
+            await db.rollback()
     payload_out["print_jobs"] = print_jobs_out
-    payload_out["print_browser_fallback"] = True
+    payload_out["print_browser_fallback"] = False
     payload_out["print_note"] = (
-        "Queued is not printed. The browser cannot list OS printers; "
-        "use the print dialog, a paired till agent, or an allowlisted network printer."
+        "Queued is not printed. A paired till agent or an allowlisted network printer prints the receipt."
     )
     return env(payload_out, "POS sale recorded")
 

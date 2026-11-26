@@ -18,6 +18,7 @@ const tests = [
   'lib/consent.test.ts',
   'lib/legalText.test.ts',
   'lib/prefetchCache.test.ts',
+  'lib/receiptPrint.test.ts',
 ];
 
 try {

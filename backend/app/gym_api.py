@@ -10,6 +10,8 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import gym as svc
+from app import models as m
+from app import receipt_print
 from app.db import get_db
 from app.schemas import E164PhoneValue, NonNegativeMoneyValue, PartyNameValue, PositiveMoneyValue, UuidIdValue
 from app.security import require_permission
@@ -177,8 +179,9 @@ async def gym_sell(
         method=payload.method, user_id=claims.get("sub"),
     )
     await db.commit()
+    payment_id = await receipt_print.newest_id(db, m.GymPayment, claims["tenant_id"], m.GymPayment.membership_id, row.id)
     return _env(
-        {"id": row.id, "membership_number": row.membership_number, "starts_on": row.starts_on.isoformat(),
+        {"id": row.id, "payment_id": payment_id, "membership_number": row.membership_number, "starts_on": row.starts_on.isoformat(),
          "ends_on": row.ends_on.isoformat(), "total": svc._money(row.total)},
         "Membership sold",
     )

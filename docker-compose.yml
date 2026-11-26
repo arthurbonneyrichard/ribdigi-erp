@@ -58,6 +58,9 @@ services:
       # silently kept serving old code. Polling makes saves reload the API again.
       WATCHFILES_FORCE_POLLING: "true"
     ports: ["8000:8000"]
+    # After an unclean shutdown Docker Desktop can start this before Postgres is ready;
+    # without a retry the API stays down and nobody can sign in.
+    restart: on-failure
     depends_on:
       postgres: {condition: service_healthy}
       redis: {condition: service_started}

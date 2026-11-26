@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from typing import Literal
+
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import audit as audit_svc
 from app import models as m
 from app import printers as printers_svc
+from app import receipt_print as receipt_svc
 from app.db import get_db
-from app.security import require_permission
+from app.schemas import NonNegativeMoneyValue, UuidIdValue
+from app.security import current_claims, require_permission
 
 router = APIRouter(prefix="/printers", tags=["printers"])
 
@@ -190,6 +195,197 @@ async def test_printer(
     return env(printers_svc.serialize_job(job, include_payload=True), "Test print queued")
 
 
+ReceiptSource = Literal[
+    "pos_sale",
+    "restaurant_order",
+    "bakery_sale",
+    "bakery_order_payment",
+    "bakery_customer_payment",
+    "hotel_payment",
+    "hotel_shop_sale",
+    "gym_payment",
+    "gym_sale",
+    "fmcg_payment",
+    "customer_payment",
+    "layaway_payment",
+]
+
+# The hotel request each hotel receipt belongs to, for the hotel staff job rules.
+_HOTEL_PAYMENT_PATHS = {
+    "hotel_payment": "/hotel/folios/x/payments",
+    "hotel_shop_sale": "/hotel/shop/sales",
+    "customer_payment": "/hotel/invoices/x/payments",
+}
+
+
+class ReceiptPrintBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_type: ReceiptSource
+    source_id: UuidIdValue
+    # auto: straight after payment. print: asked again. retry: resend a failed copy. reprint: new copy.
+    mode: Literal["auto", "print", "retry", "reprint"] = "auto"
+    terminal_id: str | None = Field(default=None, max_length=64)
+    cash_tendered: NonNegativeMoneyValue | None = None
+
+
+class TerminalBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str | None = Field(default=None, max_length=80)
+    receipt_printer_id: UuidIdValue | None = None
+    auto_print: bool = True
+
+
+async def _require_receipt_access(
+    source_type: str, request: Request, claims: dict, db: AsyncSession, action: str = "read"
+) -> None:
+    """Printing the first copy needs to see the payment; another copy needs to be able to take one."""
+    refused: HTTPException | None = None
+    for module in receipt_svc.SOURCE_MODULES[source_type]:
+        try:
+            await require_permission(module, action)(request=request, claims=claims, db=db)
+        except HTTPException as exc:
+            refused = exc
+            continue
+        if module == "hotel":
+            from app import hotel_jobs
+
+            job = await hotel_jobs.job_role(db, claims.get("tenant_id"), claims.get("role"))
+            hotel_jobs.enforce(job, "POST", _HOTEL_PAYMENT_PATHS[source_type])
+        return
+    raise refused or HTTPException(status_code=403, detail="Insufficient permissions")
+
+
+@router.post("/receipts")
+async def print_payment_receipt(
+    payload: ReceiptPrintBody,
+    request: Request,
+    claims=Depends(current_claims),
+    db: AsyncSession = Depends(get_db),
+):
+    """Print the receipt of a saved payment. Safe to call twice; never creates or changes a payment."""
+    await _require_receipt_access(
+        payload.source_type, request, claims, db, "write" if payload.mode in {"retry", "reprint"} else "read"
+    )
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    queued_before = payload.mode == "retry" and await receipt_svc.receipt_status(
+        db, tenant_id=claims["tenant_id"], source_type=payload.source_type, source_id=payload.source_id
+    )
+    if queued_before:
+        jobs = await receipt_svc.retry_receipt(
+            db,
+            tenant=tenant,
+            source_type=payload.source_type,
+            source_id=payload.source_id,
+            user_id=claims.get("sub"),
+        )
+        receipt = await receipt_svc.build_receipt(
+            db, tenant=tenant, source_type=payload.source_type, source_id=payload.source_id
+        )
+        data = {"receipt": receipt_svc._public(receipt), "jobs": jobs, "auto_print": True}
+    else:
+        data = await receipt_svc.print_receipt(
+            db,
+            tenant=tenant,
+            source_type=payload.source_type,
+            source_id=payload.source_id,
+            mode=payload.mode,
+            terminal_id=payload.terminal_id,
+            cash_tendered=payload.cash_tendered,
+            user_id=claims.get("sub"),
+        )
+    if payload.mode in {"retry", "reprint"}:
+        await audit_svc.record_event(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            module="printers",
+            action=f"print_{payload.mode}",
+            entity=payload.source_type,
+            entity_id=payload.source_id,
+            details={"job_ids": [j["id"] for j in data["jobs"]]},
+        )
+    if not any(job["status"] == "printed" for job in data["jobs"]):
+        # For the manual "Open print window" button when no printer can print by itself.
+        data["fallback"] = await receipt_svc.fallback_slip(
+            db,
+            tenant=tenant,
+            source_type=payload.source_type,
+            source_id=payload.source_id,
+            cash_tendered=payload.cash_tendered,
+        )
+    await db.commit()
+    return env(data, "Receipt print requested")
+
+
+@router.get("/receipts")
+async def payment_receipt_status(
+    source_type: ReceiptSource,
+    source_id: UuidIdValue,
+    request: Request,
+    claims=Depends(current_claims),
+    db: AsyncSession = Depends(get_db),
+):
+    await _require_receipt_access(source_type, request, claims, db)
+    return env(
+        {
+            "jobs": await receipt_svc.receipt_status(
+                db, tenant_id=claims["tenant_id"], source_type=source_type, source_id=source_id
+            )
+        }
+    )
+
+
+@router.get("/terminals")
+async def list_print_terminals(
+    claims=Depends(require_permission("printers", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    return env(receipt_svc.list_terminals(tenant))
+
+
+@router.get("/terminals/{terminal_id}")
+async def get_print_terminal(
+    terminal_id: str,
+    claims=Depends(require_permission("printers", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    return env(receipt_svc.terminal_settings(tenant, terminal_id[:64]))
+
+
+@router.put("/terminals/{terminal_id}")
+async def put_print_terminal(
+    terminal_id: str,
+    payload: TerminalBody,
+    claims=Depends(require_permission("printers", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    data = await receipt_svc.save_terminal(
+        db,
+        tenant=tenant,
+        terminal_id=terminal_id[:64],
+        name=payload.name,
+        receipt_printer_id=payload.receipt_printer_id,
+        auto_print=payload.auto_print,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="printers",
+        action="print_terminal_saved",
+        entity="terminal",
+        entity_id=terminal_id[:36],
+        details={"receipt_printer_id": payload.receipt_printer_id, "auto_print": payload.auto_print},
+    )
+    await db.commit()
+    return env(data, "Till printer saved")
+
+
 @router.get("/jobs")
 async def list_print_jobs(
     source_id: str | None = None,
@@ -224,6 +420,7 @@ async def retry_print_job(
     job = await printers_svc.retry_job(
         db, tenant_id=claims["tenant_id"], job_id=job_id, user_id=claims.get("sub")
     )
+    await printers_svc.deliver_now(db, job)
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
@@ -377,7 +574,7 @@ async def agent_poll_jobs(
     await db.commit()
     return env(
         [
-            printers_svc.serialize_job(j, include_payload=True)
+            await printers_svc.agent_job(db, j)
             for j in jobs
         ]
     )

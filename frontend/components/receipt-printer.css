@@ -1,0 +1,75 @@
+/* Receipt printer panel. Drops in at the top of the screen with no backdrop, so the till stays usable. Below the till lock. */
+.rprint{position:fixed;left:0;right:0;top:12px;margin:0 auto;z-index:8000;width:320px;max-width:calc(100vw - 24px);
+  max-height:calc(100dvh - 24px);overflow:auto;box-sizing:border-box;padding:14px 16px 16px;border-radius:20px;color:#fff;
+  background:linear-gradient(165deg,#0b4a28,#001a0e);border:1px solid rgba(200,232,106,.28);
+  box-shadow:0 24px 60px -18px rgba(0,0,0,.6);animation:rprint-in .22s ease-out both}
+.rprint .rprint-close{position:absolute;top:6px;right:6px;z-index:4;width:28px;height:28px;min-height:0;margin:0;padding:0;
+  border:0;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font-size:18px;line-height:1;cursor:pointer}
+.rprint-stage{display:flex;flex-direction:column;align-items:center}
+
+/* The paper leaves the slot under the printer and feeds downwards in small steps. */
+.rprint-slot-window{position:relative;z-index:1;width:212px;min-height:34px;overflow:hidden;margin-top:-9px;padding-bottom:7px}
+.rprint-paper{position:relative;margin:0 6px;padding:16px 10px 12px;background:#fff;color:#10211b;
+  font:600 10.5px/1.45 "Courier New",ui-monospace,monospace;text-align:center;display:flex;flex-direction:column;
+  animation:rprint-feed 2.4s steps(48,end) .15s both}
+.rprint-paper::after{content:"";position:absolute;left:0;right:0;bottom:-5px;height:6px;
+  background:linear-gradient(45deg,transparent 4px,#fff 0) 0 0/8px 6px,linear-gradient(315deg,transparent 4px,#fff 0) 0 0/8px 6px}
+.rprint-paper p{display:flex;justify-content:space-between;gap:8px;margin:0;text-align:left}
+.rprint-paper p span:first-child{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.rprint-paper p span:last-child{white-space:nowrap}
+.rprint-paper hr{width:100%;border:0;border-top:1px dashed #8a9a90;margin:4px 0}
+.rprint-paper em{font-style:normal;opacity:.7}
+.rprint-paper .rprint-total{font-size:12.5px;font-weight:800}
+.rprint-cap{text-transform:capitalize}
+.rprint-thanks{margin-top:6px}
+
+.rprint-machine{position:relative;z-index:2;width:244px;height:74px;flex:none;border-radius:18px 18px 12px 12px;
+  background:linear-gradient(180deg,#4a5852 0,#232d29 42%,#141b18 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 10px 18px -10px rgba(0,0,0,.7)}
+.rprint-slot{position:absolute;left:14px;right:14px;bottom:6px;height:7px;border-radius:4px;background:#050807;
+  box-shadow:inset 0 2px 3px rgba(0,0,0,.9)}
+.rprint-led{position:absolute;right:14px;top:14px;width:9px;height:9px;border-radius:50%;background:#4ab012;box-shadow:0 0 9px #4ab012}
+.rprint-shop{position:absolute;left:44px;right:44px;top:12px;bottom:22px;display:flex;align-items:center;justify-content:center;
+  overflow:hidden;font:800 13px/1.2 system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase;text-align:center;color:#e6f2c4}
+.rprint-shop span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere}
+.rprint-printing .rprint-machine{animation:rprint-hum .16s linear infinite}
+.rprint-printing .rprint-led,.rprint-preparing .rprint-led{animation:rprint-blink .6s steps(2,jump-none) infinite}
+.rprint-failed .rprint-led{background:#e5484d;box-shadow:0 0 9px #e5484d}
+.rprint-unavailable .rprint-led{background:#f5a524;box-shadow:0 0 9px #f5a524}
+.rprint-failed .rprint-paper,.rprint-unavailable .rprint-paper{filter:brightness(.82)}
+
+.rprint-check{position:absolute;left:8px;top:18px;width:32px;height:32px}
+.rprint-check circle{fill:#4ab012;animation:rprint-pop .3s ease-out both}
+.rprint-check circle{transform-origin:center}
+.rprint-check path{fill:none;stroke:#10211b;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:40;stroke-dashoffset:40;animation:rprint-draw .35s .18s ease-out forwards}
+
+.rprint-status{display:flex;flex-direction:column;gap:3px;margin-top:12px;text-align:center}
+.rprint-status strong{font-size:15px;color:#fff}
+.rprint-status span{font-size:12.5px;color:#cfe0d6;overflow-wrap:anywhere}
+.rprint-status .rprint-safe{color:#c8e86a;font-weight:700}
+.rprint-dots{display:inline-flex;gap:3px;margin-left:6px}
+.rprint-dots i{width:4px;height:4px;border-radius:50%;background:#c8e86a;animation:rprint-blink .9s infinite}
+.rprint-dots i:nth-child(2){animation-delay:.15s}
+.rprint-dots i:nth-child(3){animation-delay:.3s}
+
+.rprint-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.rprint .rprint-actions button{flex:1 1 120px;min-height:44px;margin:0;padding:8px 12px;border-radius:12px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;font-weight:700;font-size:13.5px}
+.rprint .rprint-actions button.rprint-primary{background:#4ab012;border-color:#4ab012;color:#10211b}
+
+@media (max-width:640px){
+  .rprint{left:12px;right:12px;width:auto}
+}
+@media print{.rprint{display:none}}
+@media (prefers-reduced-motion:reduce){
+  .rprint,.rprint *{animation:none !important}
+  .rprint-check path{stroke-dashoffset:0}
+}
+
+@keyframes rprint-in{from{opacity:0;transform:translateY(-22px)}to{opacity:1;transform:none}}
+@keyframes rprint-feed{from{transform:translateY(-102%)}to{transform:translateY(0)}}
+@keyframes rprint-hum{50%{transform:translateX(.6px)}}
+@keyframes rprint-blink{50%{opacity:.25}}
+@keyframes rprint-pop{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes rprint-draw{to{stroke-dashoffset:0}}

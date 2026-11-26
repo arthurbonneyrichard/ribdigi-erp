@@ -15,6 +15,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import bakery as svc
+from app import models as m
+from app import receipt_print
 from app.db import get_db
 from app.schemas import E164PhoneValue, IsoDateQueryValue, NonNegativeMoneyValue, PartyNameValue, UuidIdValue
 from app import bakery_safety as safety
@@ -527,7 +529,9 @@ async def bakery_order_create(
     _job(claims, "orders")
     row = await svc.create_order(db, claims["tenant_id"], payload, user_id=claims.get("sub"))
     await db.commit()
-    return _env(await svc.present_order(db, row), "Order taken")
+    data = await svc.present_order(db, row)
+    data["payment_id"] = await receipt_print.newest_id(db, m.BakeryPayment, claims["tenant_id"], m.BakeryPayment.order_id, row.id)
+    return _env(data, "Order taken")
 
 
 class ConfirmQuoteBody(BaseModel):
@@ -550,7 +554,9 @@ async def bakery_quote_confirm(
     _job(claims, "orders")
     row = await svc.confirm_quote(db, claims["tenant_id"], order_id, deposit=payload.deposit, method=payload.method, user_id=claims.get("sub"))
     await db.commit()
-    return _env(await svc.present_order(db, row), "Quote confirmed as an order")
+    data = await svc.present_order(db, row)
+    data["payment_id"] = await receipt_print.newest_id(db, m.BakeryPayment, claims["tenant_id"], m.BakeryPayment.order_id, row.id)
+    return _env(data, "Quote confirmed as an order")
 
 
 @router.post("/orders/{order_id}/decline-quote")
@@ -577,7 +583,9 @@ async def bakery_order_part_payment(
     _job(claims, "orders")
     row = await svc.add_deposit(db, claims["tenant_id"], order_id, amount=payload.amount, method=payload.method, user_id=claims.get("sub"))
     await db.commit()
-    return _env(await svc.present_order(db, row), "Payment taken")
+    data = await svc.present_order(db, row)
+    data["payment_id"] = await receipt_print.newest_id(db, m.BakeryPayment, claims["tenant_id"], m.BakeryPayment.order_id, row.id)
+    return _env(data, "Payment taken")
 
 
 @router.post("/orders/{order_id}/ready")
@@ -723,7 +731,9 @@ async def bakery_order_collect(
         driver_id=bag_owner,
     )
     await db.commit()
-    return _env(await svc.present_order(db, row), "Delivered" if row.delivery else "Order collected")
+    data = await svc.present_order(db, row)
+    data["sale_id"] = await receipt_print.newest_id(db, m.BakerySale, claims["tenant_id"], m.BakerySale.order_id, row.id)
+    return _env(data, "Delivered" if row.delivery else "Order collected")
 
 
 @router.get("/drivers")

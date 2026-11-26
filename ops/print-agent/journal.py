@@ -284,6 +284,9 @@ class JournalHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
+        if parsed.path == "/v1/print":
+            self._print()
+            return
         if parsed.path != "/v1/offline-sales":
             self._send(404, {"error": "Not found"})
             return
@@ -308,6 +311,29 @@ class JournalHandler(BaseHTTPRequestHandler):
                 "state": saved["state"],
             },
         )
+
+    def _print(self) -> None:
+        """Offline receipt printing for the ERP's own page (see local_print.py)."""
+        import local_print
+
+        length = int(self.headers.get("Content-Length") or "0")
+        if length < 1 or length > 64_000:
+            self._send(422, {"error": "Receipt is empty or too large"})
+            return
+        body = self.rfile.read(length)
+        if "application/json" not in (self.headers.get("Content-Type") or ""):
+            self._send(415, {"error": "Receipt must be JSON"})
+            return
+        try:
+            raw = json.loads(body.decode("utf-8"))
+            result = local_print.handle(self.headers.get("Origin"), raw)
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            self._send(422, {"error": "Receipt must be JSON"})
+            return
+        except local_print.LocalPrintError as exc:
+            self._send(exc.status, {"error": str(exc)})
+            return
+        self._send(200, result)
 
 
 def serve_forever(host: str = "127.0.0.1", port: int | None = None) -> None:

@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../../../lib/api';
 import { money, problem, type Row } from '../../../../lib/restaurantDesk';
+import { printPaymentReceipt } from '../../../../lib/receiptPrint';
 import '../restaurant-desk.css';
 
 const DELIVERED = new Set(['received', 'partially_received']);
@@ -234,7 +235,8 @@ function PaySheet({ pay, accounts, onClose, onDone }: { pay: NonNullable<Pay>; a
       if (pay.kind === 'supplier') {
         await api(`/suppliers/${id}/payments`, { method: 'POST', body: JSON.stringify({ ...body, supplier_id: id }) });
       } else {
-        await api(`/customers/${id}/payments`, { method: 'POST', body: JSON.stringify({ ...body, customer_id: id }) });
+        const paid = await api(`/customers/${id}/payments`, { method: 'POST', body: JSON.stringify({ ...body, customer_id: id }) });
+        printPaymentReceipt('customer_payment', paid?.data?.id);
       }
       await onDone(pay.kind === 'supplier' ? `${money(n)} paid to ${pay.party.name}` : `${money(n)} received from ${pay.party.name}`);
     } catch (err) {

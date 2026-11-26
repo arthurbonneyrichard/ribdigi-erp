@@ -19,6 +19,7 @@ import { getMe } from '../../../lib/meCache';
 import { normalizeIndustry, usesWholesaleTrade } from '../../../lib/industries';
 import { isHotelIndustry } from '../../../lib/tenantNav';
 import { useStoreContext } from '../../../lib/storeContext';
+import { printPaymentReceipt } from '../../../lib/receiptPrint';
 import './sales-ui.css';
 
 type Tab = 'customers' | 'quotations' | 'orders' | 'invoices' | 'returns' | 'coupons' | 'giftcards' | 'made';
@@ -800,16 +801,21 @@ export default function Page() {
     setMessage('');
     setReprintingId(row.id);
     const isRegister = row.source === 'register';
-    const sourceId = isRegister ? row.id : row.invoice_id || row.id;
+    if (isRegister) {
+      printPaymentReceipt('pos_sale', row.id, { mode: 'reprint' });
+      setReprintingId('');
+      return;
+    }
+    const sourceId = row.invoice_id || row.id;
     try {
       let printed = false;
       try {
         const queued = await api('/printers/reprint', {
           method: 'POST',
           body: JSON.stringify({
-            source_type: isRegister ? 'pos_sale' : 'sales_invoice',
+            source_type: 'sales_invoice',
             source_id: sourceId,
-            purposes: isRegister ? ['customer_receipt'] : ['invoice'],
+            purposes: ['invoice'],
           }),
         });
         const jobs = Array.isArray(queued.data) ? queued.data : [];
@@ -845,10 +851,7 @@ export default function Page() {
         printed = false;
       }
       if (!printed) {
-        if (isRegister) {
-          const receipt = await api(`/pos/sales/${row.id}/receipt`);
-          printed = openReceiptPrintWindow(receipt.data?.html, receipt.data?.text || '');
-        } else if (invoicePaper === 'a4') {
+        if (invoicePaper === 'a4') {
           await previewInvoicePdf(sourceId, 'a4');
           printed = true;
         } else {
@@ -1017,6 +1020,7 @@ export default function Page() {
           amount,
         }),
       });
+      printPaymentReceipt('customer_payment', r.data?.id);
       setMessage(r.message || 'Payment recorded');
       setPayAmounts((prev) => {
         const next = { ...prev };

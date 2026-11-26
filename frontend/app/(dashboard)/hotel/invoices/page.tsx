@@ -13,6 +13,7 @@ import { fetchAttachment } from '../../../../lib/attachments';
 import { formatMoney } from '../../../../lib/format';
 import HotelGuide from '../../../../components/HotelGuide';
 import '../hotel-desk.css';
+import { printPaymentReceipt } from '../../../../lib/receiptPrint';
 import './hotel-invoices.css';
 
 type Row = Record<string, any>;
@@ -190,10 +191,11 @@ function PaySheet({ row, onClose, onDone }: { row: Row; onClose: () => void; onD
     setBusy(true);
     setError('');
     try {
-      await api(`/hotel/invoices/${row.id}/payments`, {
+      const res = await api(`/hotel/invoices/${row.id}/payments`, {
         method: 'POST',
         body: JSON.stringify({ amount: n, method, reference: reference.trim() || null }),
       });
+      printPaymentReceipt('customer_payment', res?.data?.payment_id);
       await onDone(`${money(n)} received from ${row.company_name || row.guest_name}`);
     } catch (err) {
       setError(problem(err));

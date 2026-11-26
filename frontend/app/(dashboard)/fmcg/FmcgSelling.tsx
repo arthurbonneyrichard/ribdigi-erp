@@ -11,6 +11,7 @@ import { formatMoney } from '../../../lib/format';
 import { getMe } from '../../../lib/meCache';
 import DeskDashboard from '../../../components/DeskDashboard';
 import DeskIcon from '../../../components/DeskIcon';
+import { printPaymentReceipt } from '../../../lib/receiptPrint';
 import './fmcg-selling.css';
 
 type Row = Record<string, any>;
@@ -576,7 +577,10 @@ export default function FmcgSelling({ tab }: { tab: string }) {
                 type="button" className="fs-primary" disabled={busy || !pay.customer_id || !(Number(pay.amount) > 0)}
                 onClick={async () => {
                   const ok = await run('/fmcg/collections', { customer_id: pay.customer_id, amount: Number(pay.amount), method: pay.method, dispatch_id: pay.dispatch_id || null }, 'Payment recorded');
-                  if (ok) setPay({ customer_id: '', amount: '', method: 'cash', dispatch_id: '' });
+                  if (ok) {
+                    printPaymentReceipt('fmcg_payment', (ok as Row).id);
+                    setPay({ customer_id: '', amount: '', method: 'cash', dispatch_id: '' });
+                  }
                 }}
               >
                 Record payment

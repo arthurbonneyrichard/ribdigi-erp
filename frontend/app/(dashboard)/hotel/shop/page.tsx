@@ -12,6 +12,7 @@ import { api } from '../../../../lib/api';
 import { formatMoney } from '../../../../lib/format';
 import HotelGuide from '../../../../components/HotelGuide';
 import '../hotel-desk.css';
+import { printPaymentReceipt } from '../../../../lib/receiptPrint';
 import './hotel-shop.css';
 
 type Row = Record<string, any>;
@@ -150,6 +151,9 @@ export default function HotelShopPage() {
       });
       const sale = res?.data || {};
       const cash = Number(tendered || 0);
+      if (method !== 'room') {
+        printPaymentReceipt('hotel_shop_sale', sale.id, { cashTendered: method === 'cash' && cash > 0 ? cash : null });
+      }
       setDone({ ...sale, change: method === 'cash' && tendered ? Math.max(0, cash - Number(sale.total || 0)) : 0 });
       setBasket({});
       setPaying(false);

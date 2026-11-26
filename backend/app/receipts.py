@@ -229,7 +229,33 @@ def build_receipt_payload(
         "payment_status": settle["payment_status"],
         "invoice_number": payload.get("invoice_number"),
         "sales_invoice_id": payload.get("sales_invoice_id"),
+        **_cash_fields(payload, receipt_payments, money_json(tx.total)),
     }
+
+
+def _cash_fields(payload: dict[str, Any], payments: list[dict[str, Any]], total: float) -> dict[str, Any]:
+    """Cash received and change, when the till recorded what the customer handed over."""
+    given = payload.get("cash_tendered")
+    if given is None:
+        return {}
+    if payments:
+        due = sum(p["amount"] for p in payments if p["payment_method"] == "cash")
+    else:
+        due = total if (payload.get("payment_method") or "cash") == "cash" else 0
+    due = money_json(round(due, 2))
+    if due <= 0 or money_json(given) + 0.009 < due:
+        return {}
+    return {"cash_tendered": money_json(given), "change_due": money_json(round(money_json(given) - due, 2))}
+
+
+def _cash_pairs(receipt: dict[str, Any]) -> list[tuple[str, str]]:
+    pairs: list[tuple[str, str]] = []
+    if money_json(receipt.get("tip") or 0) > 0:
+        pairs.append(("Tip", _money(receipt.get("tip"))))
+    if receipt.get("cash_tendered") is not None:
+        pairs.append(("Cash received", _money(receipt.get("cash_tendered"))))
+        pairs.append(("Change", _money(receipt.get("change_due") or 0)))
+    return pairs
 
 
 def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
@@ -251,6 +277,10 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
         for part in _wrap(str(receipt["print_header"]), width):
             lines.append(_center(part, width))
     lines.append("-" * width)
+    if receipt.get("title"):
+        lines.append(_center(str(receipt["title"]), width))
+    if receipt.get("copy_label"):
+        lines.append(_center(f"*** {receipt['copy_label']} ***", width))
     lines.append(_lr("Receipt no.", str(receipt.get("reference") or ""), width))
     created = receipt.get("created_at")
     if isinstance(created, datetime):
@@ -273,7 +303,7 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     lines.append("-" * width)
     currency = receipt.get("currency") or ""
     lines.append(_lr("Subtotal", _money(receipt.get("subtotal") or 0), width))
-    lines.append(_lr("Tax", _money(receipt.get("tax") or 0), width))
+    lines.append(_lr(str(receipt.get("tax_label") or "Tax"), _money(receipt.get("tax") or 0), width))
     discount_amount = money_json(receipt.get("discount_amount") or 0)
     if discount_amount > 0:
         lines.append(_lr("Discount", f"-{_money(discount_amount)}", width))
@@ -292,11 +322,14 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
         from app.pos import payment_method_label
 
         lines.append(_lr("Payment", payment_method_label(receipt.get("payment_method")).upper(), width))
-    paid_amount = money_json(receipt.get("paid_amount"))
-    balance_due = money_json(receipt.get("balance_due"))
+    for label, value in _cash_pairs(receipt):
+        lines.append(_lr(label, value, width))
+    paid_amount = money_json(receipt.get("paid_amount") or 0)
+    balance_due = money_json(receipt.get("balance_due") or 0)
     status = str(receipt.get("payment_status") or "").replace("_", " ")
     if paid_amount > 0 or balance_due > 0 or status:
-        lines.append(_lr("Paid", _money(paid_amount), width))
+        if paid_amount > 0 or status:
+            lines.append(_lr("Paid", _money(paid_amount), width))
         if balance_due > 0:
             lines.append(_lr("Balance due", _money(balance_due), width))
         if status:
@@ -351,6 +384,10 @@ def render_thermal_html(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
         for part in _wrap(str(receipt["print_header"]), 26 if narrow else 32):
             bits.append(f'<div class="hdr mid">{html.escape(part)}</div>')
     bits.append('<div class="rule"></div>')
+    if receipt.get("title"):
+        bits.append(_html_mid(str(receipt["title"])))
+    if receipt.get("copy_label"):
+        bits.append(_html_mid(f"*** {receipt['copy_label']} ***"))
     meta: list[str] = []
     meta.append(_html_pair("Receipt no.", str(receipt.get("reference") or "")))
     created = receipt.get("created_at")
@@ -387,7 +424,7 @@ def render_thermal_html(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     totals: list[str] = []
     currency = str(receipt.get("currency") or "").strip()
     totals.append(_html_pair("Subtotal", _money(receipt.get("subtotal") or 0)))
-    totals.append(_html_pair("Tax", _money(receipt.get("tax") or 0)))
+    totals.append(_html_pair(str(receipt.get("tax_label") or "Tax"), _money(receipt.get("tax") or 0)))
     discount_amount = money_json(receipt.get("discount_amount") or 0)
     if discount_amount > 0:
         totals.append(_html_pair("Discount", f"-{_money(discount_amount)}"))
@@ -416,12 +453,13 @@ def render_thermal_html(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
             + _html_pair("Payment", payment_method_label(receipt.get("payment_method")).upper())
             + "</table>"
         )
-    paid_amount = money_json(receipt.get("paid_amount"))
-    balance_due = money_json(receipt.get("balance_due"))
+    paid_amount = money_json(receipt.get("paid_amount") or 0)
+    balance_due = money_json(receipt.get("balance_due") or 0)
     status = str(receipt.get("payment_status") or "").replace("_", " ")
-    settle: list[str] = []
+    settle: list[str] = [_html_pair(label, value) for label, value in _cash_pairs(receipt)]
     if paid_amount > 0 or balance_due > 0 or status:
-        settle.append(_html_pair("Paid", _money(paid_amount)))
+        if paid_amount > 0 or status:
+            settle.append(_html_pair("Paid", _money(paid_amount)))
         if balance_due > 0:
             settle.append(_html_pair("Balance due", _money(balance_due)))
         if status:

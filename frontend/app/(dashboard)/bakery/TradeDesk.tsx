@@ -6,6 +6,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { printPaymentReceipt } from '../../../lib/receiptPrint';
 import { bakeryApi, openPrintable } from '../../../lib/bakeryTill';
 import { formatMoney } from '../../../lib/format';
 
@@ -257,7 +258,9 @@ export default function TradeDesk({ items, isManager }: { items: Row[]; isManage
             <button
               type="button" className="bk-primary" disabled={busy || !(Number(payment.amount) > 0)}
               onClick={async () => {
-                if (await run(`/bakery/trade/customers/${customer.id}/payments`, { amount: Number(payment.amount), method: payment.method, reference: payment.reference.trim() || null }, 'Payment recorded')) {
+                const paid = await run(`/bakery/trade/customers/${customer.id}/payments`, { amount: Number(payment.amount), method: payment.method, reference: payment.reference.trim() || null }, 'Payment recorded');
+                if (paid) {
+                  printPaymentReceipt('bakery_customer_payment', paid.id);
                   setPayment({ ...payment, amount: '', reference: '' });
                 }
               }}

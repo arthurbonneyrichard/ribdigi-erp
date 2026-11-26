@@ -8,6 +8,7 @@ import CustomerGroupsWindow from '../../../components/CustomerGroupsWindow';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import { api } from '../../../lib/api';
 import { openDocumentPrint } from '../../../lib/documentPrint';
+import { printPaymentReceipt as printTillReceipt } from '../../../lib/receiptPrint';
 import { createPaintGet, peekPrefetch } from '../../../lib/prefetchCache';
 import { currencySign, formatDate, formatMoney } from '../../../lib/format';
 import { useCompanyFormat } from '../../../lib/useCompanyFormat';
@@ -458,6 +459,7 @@ export default function Page() {
           notes,
         }),
       });
+      printTillReceipt('customer_payment', res?.data?.id);
       const number = String(res?.data?.payment_number || '');
       setLastPayment(res?.data?.id ? { id: String(res.data.id), number } : null);
       setMessage(`Payment ${number ? `${number} ` : ''}of ${money(amount)} recorded for ${accountName}`);

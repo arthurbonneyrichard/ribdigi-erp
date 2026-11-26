@@ -7,6 +7,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { printPaymentReceipt } from '../lib/receiptPrint';
 import { api } from '../lib/api';
 
 type Line = { product_id: string; quantity: number; unit_price?: number; name?: string };
@@ -186,6 +187,7 @@ export default function PosHoldLayaway({ storeId, cart, customerName, customerId
                     setForm({ name: '', phone: '', deposit: '', method: 'cash', due: '' });
                     await loadLayaways();
                     const row = res?.data || {};
+                    if (Number(form.deposit) > 0) printPaymentReceipt('layaway_payment', row.payments?.at(-1)?.id);
                     return `${row.layaway_number}: goods set aside. ${formatMoney(Number(row.balance || 0))} left to pay.`;
                   })
                 }
@@ -226,6 +228,7 @@ export default function PosHoldLayaway({ storeId, cart, customerName, customerId
                       void run(async () => {
                         const amount = Number(p.amount) || Number(l.balance);
                         const res = await api(`/pos/layaways/${l.id}/payments`, { method: 'POST', body: JSON.stringify({ amount, method: p.method }) });
+                        printPaymentReceipt('layaway_payment', res?.data?.payments?.at(-1)?.id);
                         await loadLayaways();
                         return res?.data?.status === 'completed'
                           ? `${l.layaway_number} is paid in full. Hand over the goods.`

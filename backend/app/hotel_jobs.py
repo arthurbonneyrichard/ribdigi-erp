@@ -98,6 +98,9 @@ def enforce(role: str | None, method: str, url_path: str) -> None:
     key = str(role or "")
     if key not in _WRITES:
         return
+    if "/printers/receipts" in url_path:
+        # Printing has its own rule: whoever may take that payment may print it (printers_api).
+        return
     path = url_path.split("/hotel", 1)[-1].rstrip("/") or "/"
     if method in {"GET", "HEAD", "OPTIONS"}:
         refused = _READS_REFUSED.get(key)
